@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#1a5276"/>
+  <text x="400" y="230" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="bold">Before &amp; After</text>
+  <text x="400" y="270" text-anchor="middle" fill="#5dade2" font-family="Arial, sans-serif" font-size="18">Brick Steps Cleaning</text>
+  <line x1="400" y1="0" x2="400" y2="500" stroke="#5dade2" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="200" y="320" text-anchor="middle" fill="#ffffff80" font-family="Arial, sans-serif" font-size="16">BEFORE</text>
+  <text x="600" y="320" text-anchor="middle" fill="#ffffff80" font-family="Arial, sans-serif" font-size="16">AFTER</text>
+</svg>
