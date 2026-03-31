@@ -9,38 +9,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const navbar = document.getElementById('navbar');
 
     function handleScroll() {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
+        navbar.classList.toggle('scrolled', window.scrollY > 60);
     }
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
-    // --- Mobile menu toggle ---
+    // --- Mobile menu ---
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('nav-menu');
 
     hamburger.addEventListener('click', () => {
         hamburger.classList.toggle('active');
         navMenu.classList.toggle('active');
+        document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : '';
     });
 
-    // Close mobile menu when a link is clicked
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', () => {
             hamburger.classList.remove('active');
             navMenu.classList.remove('active');
+            document.body.style.overflow = '';
         });
     });
 
-    // Close mobile menu when clicking outside
     document.addEventListener('click', (e) => {
-        if (!navMenu.contains(e.target) && !hamburger.contains(e.target)) {
+        if (!navMenu.contains(e.target) && !hamburger.contains(e.target) && navMenu.classList.contains('active')) {
             hamburger.classList.remove('active');
             navMenu.classList.remove('active');
+            document.body.style.overflow = '';
         }
     });
 
@@ -48,32 +45,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('section[id]');
 
     function setActiveLink() {
-        const scrollY = window.scrollY + 100;
-
+        const scrollY = window.scrollY + 120;
         sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.offsetHeight;
-            const sectionId = section.getAttribute('id');
-            const navLink = document.querySelector(`.nav-link[href="#${sectionId}"]`);
-
-            if (navLink) {
-                if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
-                    navLink.classList.add('active');
-                } else {
-                    navLink.classList.remove('active');
-                }
+            const top = section.offsetTop;
+            const height = section.offsetHeight;
+            const id = section.getAttribute('id');
+            const link = document.querySelector(`.nav-link[href="#${id}"]`);
+            if (link) {
+                link.classList.toggle('active', scrollY >= top && scrollY < top + height);
             }
         });
     }
 
-    window.addEventListener('scroll', setActiveLink);
+    window.addEventListener('scroll', setActiveLink, { passive: true });
 
-    // --- Scroll reveal animation ---
-    const revealElements = document.querySelectorAll(
-        '.service-card, .gallery-item, .about-content, .about-image, .contact-info, .contact-form, .cta-content'
+    // --- Scroll reveal ---
+    const revealTargets = document.querySelectorAll(
+        '.service-card, .gallery-item, .about-visual, .about-content, .contact-info, .contact-form, .cta-content, .stat-item, .section-header, .gallery-cta'
     );
 
-    revealElements.forEach(el => el.classList.add('reveal'));
+    revealTargets.forEach((el, i) => {
+        el.classList.add('reveal');
+        // Add stagger delay to sibling cards
+        const parent = el.parentElement;
+        if (parent) {
+            const siblings = Array.from(parent.children).filter(c => c.classList.contains('reveal'));
+            const idx = siblings.indexOf(el);
+            if (idx >= 0 && idx < 4) {
+                el.classList.add(`reveal-delay-${idx + 1}`);
+            }
+        }
+    });
 
     const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -82,14 +84,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 revealObserver.unobserve(entry.target);
             }
         });
-    }, {
-        threshold: 0.15,
-        rootMargin: '0px 0px -50px 0px'
-    });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-    revealElements.forEach(el => revealObserver.observe(el));
+    revealTargets.forEach(el => revealObserver.observe(el));
 
-    // --- Contact form handling ---
+    // --- Counter animation for stats ---
+    const statNumbers = document.querySelectorAll('.stat-number');
+    let statsCounted = false;
+
+    function animateCounters() {
+        if (statsCounted) return;
+        statsCounted = true;
+
+        statNumbers.forEach(num => {
+            const target = parseInt(num.getAttribute('data-count'));
+            const duration = 2000;
+            const start = performance.now();
+
+            function update(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                num.textContent = Math.round(target * eased);
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    num.textContent = target;
+                }
+            }
+
+            requestAnimationFrame(update);
+        });
+    }
+
+    const statsSection = document.querySelector('.stats');
+    if (statsSection) {
+        const statsObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                animateCounters();
+                statsObserver.unobserve(statsSection);
+            }
+        }, { threshold: 0.3 });
+        statsObserver.observe(statsSection);
+    }
+
+    // --- Contact form ---
     const contactForm = document.getElementById('contact-form');
 
     contactForm.addEventListener('submit', (e) => {
@@ -98,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(contactForm);
         const data = Object.fromEntries(formData.entries());
 
-        // Build mailto link as a simple solution
         const subject = encodeURIComponent(`EveryTask Quote Request - ${data.service}`);
         const body = encodeURIComponent(
             `Name: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone || 'Not provided'}\nService: ${data.service}\n\nMessage:\n${data.message}`
@@ -106,19 +145,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.location.href = `mailto:everytaskco@gmail.com?subject=${subject}&body=${body}`;
 
-        // Show success feedback
         const btn = contactForm.querySelector('.btn');
-        const originalText = btn.textContent;
-        btn.textContent = 'Opening Email Client...';
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Opening Email Client...';
         btn.style.background = '#27ae60';
+        btn.style.borderColor = '#27ae60';
 
         setTimeout(() => {
-            btn.textContent = originalText;
+            btn.innerHTML = originalHTML;
             btn.style.background = '';
+            btn.style.borderColor = '';
         }, 3000);
     });
 
-    // --- Smooth scroll for all anchor links ---
+    // --- Smooth scroll ---
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
